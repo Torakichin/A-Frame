@@ -1,52 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
-    <meta charset="utf-8">
-    <title>AR 3Dモデル 回転 (タップで)</title>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <meta charset="utf-8" />
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <title>Hello AR.js World! Step2 (static)</title>
   </head>
-  <body style="margin: 0; overflow: hidden">
-    <a-scene embedded arjs vr-mode-ui="enabled: false">
+
+  <body style="margin: 0; overflow: hidden;">
+    <a-scene
+      vr-mode-ui="enabled: false;"
+      loading-screen="enabled: false;"
+      renderer="logarithmicDepthBuffer: true;"
+      arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
+      embedded
+    >
       <a-assets>
-        <a-asset-item id="chaei" src="MAT.glb"></a-asset-item>
+        <a-asset-item
+          id="asset-eevee"
+          src="Wood_Table.glb"
+        ></a-asset-item>
       </a-assets>
-      <a-marker type="pattern" url="pattern-marker.patt">
-        <a-entity
-          id="rotatableModel"
-          gltf-model="#chaei"
-          rotation="-90 0 0"
-          scale="0.01 0.01 0.01"
-          class="clickable" ></a-entity>
-      </a-marker>
-      <a-entity camera>
-        <a-cursor raycaster="objects: .clickable;"></a-cursor>
-      </a-entity>
+
+      <a-entity
+        name="Example"
+        gltf-model="#asset-eevee"
+        scale="0.75 0.75 0.75"
+        gps-entity-place="latitude: 33.86723; longitude: 132.75301;"
+      ></a-entity>
+
+      <a-camera gps-camera rotation-reader></a-camera>
     </a-scene>
-    <script>
-      document.querySelector("a-scene").addEventListener('loaded', function () {
-          this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-          this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-          this.renderer.toneMappingExposure = 1.0;
-      });
-
-      document.addEventListener('DOMContentLoaded', function () {
-          const rotatableModel = document.querySelector('#rotatableModel');
-          let currentYRotation = 0;
-
-          // Raycasterはa-cursorコンポーネントに設定したので、a-sceneへの設定は不要になるか、
-          // もしくは衝突しないように調整が必要です。
-          // ここではa-cursorに集約しました。
-
-          rotatableModel.addEventListener('click', function () {
-              console.log('Model clicked!');
-              currentYRotation += 90;
-              if (currentYRotation >= 360) {
-                  currentYRotation = 0;
-              }
-              rotatableModel.setAttribute('rotation', `-90 ${currentYRotation} 0`);
-          });
-      });
-    </script>
   </body>
 </html>
