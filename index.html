@@ -1,23 +1,26 @@
 <!DOCTYPE html>
 <html>
-  <script src="https://aframe.io/releases/1.0.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-  <script src="https://cdn.rawgit.com/archilogic/aframe-extras/v3.0.0/dist/aframe-extras.loaders.min.js"></script>
+  <head>
+    <meta charset="utf-8" />
+    <title>AR.js STL Model</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://unpkg.com/aframe-stl-model-component@1.0.0/index.js"></script>
+  </head>
   <body style="margin: 0px; overflow: hidden;">
     <a-scene embedded arjs>
       <a-assets>
-        <!-- STLファイルを読み込む -->
         <a-asset-item id="model" src="sample.STL"></a-asset-item>
       </a-assets>
+
       <a-marker type="pattern" url="pattern-marker.patt">
-        <!-- STLファイルを表示するエンティティ -->
         <a-entity
-          scale="0.01 0.01 0.01" 
+          scale="0.01 0.01 0.01"
           position="0 0 0"
           rotation="0 0 0"
-          stl-model="#model"
-          ></a-entity>
+          stl-model="src: #model" ></a-entity>
       </a-marker>
+
       <a-entity camera></a-entity>
     </a-scene>
   </body>
