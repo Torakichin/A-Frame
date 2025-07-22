@@ -36,7 +36,8 @@
       </a-entity>
 
       <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        // scene.loaded イベントを使うことで、A-Frameシーンが完全に準備できた後にスクリプトを実行します
+        document.querySelector('a-scene').addEventListener('loaded', function () {
           const player = document.querySelector('#player');
           const dayNightCycle = document.querySelector('#day-night-cycle');
 
@@ -44,7 +45,10 @@
           player.addEventListener('animationend', function(event) {
             if (event.detail.name === 'animation__position') { // プレイヤーの移動アニメーションであることを確認
               dayNightCycle.querySelectorAll('a-animation').forEach(anim => {
-                anim.setAttribute('startEvents', ''); // イベントリスナーを一時的に無効化
+                // アニメーションをリセットし、再度開始イベントを設定
+                // setAttribute('startEvents', '') は古い A-Frame の方法で、
+                // 最新では anim.setAttribute('begin', 'startDayCycle'); で十分ですが、
+                // 念のため reset も行います。
                 anim.components.animation.reset(); // アニメーションをリセット
                 anim.setAttribute('begin', 'startDayCycle'); // 再びイベントで開始できるように設定
               });
@@ -53,9 +57,7 @@
           });
 
           // 初回のみ昼夜サイクルを開始
-          document.querySelector('a-scene').addEventListener('loaded', function () {
-            dayNightCycle.emit('startDayCycle');
-          });
+          dayNightCycle.emit('startDayCycle');
         });
       </script>
 
