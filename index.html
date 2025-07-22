@@ -3,20 +3,30 @@
   <head>
     <meta charset="utf-8">
     <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
+
     <script>
       // 凝視テレポートのカスタムコンポーネントを定義
       AFRAME.registerComponent('gaze-teleport', {
         init: function () {
-          var el = this.el; 
-          var cameraRigEl = document.querySelector('#cameraRig'); 
+          var el = this.el; // このコンポーネントがアタッチされるカーソル要素 (a-cursor)
+          // カメラリグの要素を取得。シンプルにするため、ここではカメラ自体を動かします。
+          // もしカメラリグを明示的に定義するなら、そのIDをここに指定してください。
+          var cameraEl = document.querySelector('[camera]'); 
+
+          // カーソルからの'click'イベントをリッスン
           el.addEventListener('click', function (evt) {
-            var intersection = evt.detail.intersection; 
+            var intersection = evt.detail.intersection; // 視線が当たった点の情報
             if (!intersection) { return; } 
+
+            // 視線が当たったオブジェクトが 'teleportable' クラスを持っているか確認
             if (intersection.object.el && intersection.object.el.classList.contains('teleportable')) {
-              var newPosition = intersection.point;
-              cameraRigEl.setAttribute('position', {
+              var newPosition = intersection.point; // 当たった点の3D座標を取得
+              
+              // カメラを新しい位置に移動させる
+              // Y座標は地面に埋もれないよう、一般的な目の高さ（1.6メートル）に設定
+              cameraEl.setAttribute('position', {
                 x: newPosition.x,
-                y: 1, 
+                y: 1.6, 
                 z: newPosition.z
               });
             }
@@ -24,29 +34,18 @@
         }
       });
     </script>
+
   </head>
   <body>
-    <a-scene id="scene">
-      <a-entity position="0 0 -50">
-        <a-box class="teleportable" position="0 -.5 0" width="80" height="1" depth="100" color="gray"></a-box>
-        <a-cone color="green" position="0 1 0" radius-bottom="18" radius-top="15" height="2"></a-cone>
-        <a-entity animation="property:rotation; to:0 360 0; dur:20000; easing:linear; loop:true">
-          <a-cone color="white" position="0 35 0" radius-bottom="10" radius-top="3" height="70"></a-cone>
-          <a-cone color="white" position="-15 24 0" rotation="0 0 70" radius-bottom="8" radius-top="1" height="35"></a-cone>
-          <a-cone color="white" position="15 24 0" rotation="0 0 -70" radius-bottom="8" radius-top="1" height="35"></a-cone>
-          <a-cylinder color="gold" position="0 60 5" rotation="90 0 0" radius="6" height=".5"></a-cylinder>>
-          <a-cylinder color="#ccc" position="0 20 8" rotation="90 0 0" radius="5" height="1"></a-cylinder>>
-        </a-entity>
-        <a-box position="39 35 0" width="2" height="70" depth="2" color="red"></a-box>
-        <a-text position="42 35 0" width="120" color="red" rotation="0 0 0" value="70m"></a-text>
+    <a-scene>
+      <a-plane class="teleportable" position="0 0 -4" rotation="-90 0 0" width="100" height="100" color="#7BC8A4"></a-plane>
+      
+      <a-sky color="#ECECEC"></a-sky>
+
+      <a-entity camera position="0 1.6 0" wasd-controls look-controls>
+        <a-cursor fuse="true" timeout="1500" color="#FF0000" scale="0.1 0.1 0.1" 
+                  raycaster="far: 100;"></a-cursor>
       </a-entity>
-      <a-sky color="#cef"></a-sky>
-      <a-entity id="cameraRig">
-        <a-entity id="head" camera position="0 1 0" wasd-controls look-controls></a-entity>
-        <a-entity position="0 0 -1" raycaster="objects: .teleportable; far: 100;" gaze-teleport>
-          <a-cursor fuse="true" timeout="1500" color="#FF0000"></a-cursor>
-        </a-entity>
-        </a-entity>
     </a-scene>
   </body>
 </html>
