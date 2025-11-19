@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>A-Frame VR視線移動対応</title>
+    <title>A-Frame VR視線タイマー移動 (安定版)</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <style>
       /* カーソルを見やすくするためのスタイル */
@@ -14,12 +14,13 @@
     
     <script>
       /**
-       * 視線カーソルがオブジェクトを注視した際に、その場所へカメラリグを移動させるコンポーネント
+       * 視線カーソルがオブジェクトを注視した際に、カスタムタイマーによって移動を制御するコンポーネント。
+       * A-Frame標準のfuseTimeoutが不安定な環境向け。
        */
-      AFRAME.registerComponent('gaze-mover', {
+      AFRAME.registerComponent('gaze-timer-mover', {
         schema: {
-          // テレポート先のオブジェクトとの距離を設定
-          distance: {type: 'number', default: 0.5}, // ターゲットの少し手前に着地
+          // 移動に必要な注視時間 (ミリ秒)
+          gazeTime: {type: 'number', default: 1500}, 
           // テレポートさせるエンティティ (カメラリグ) のセレクタ
           cameraRig: {type: 'selector', default: '#cameraRig'},
           // 移動速度（アニメーションのデュレーション）
@@ -27,26 +28,28 @@
         },
 
         init: function () {
-          const el = this.el; // このコンポーネントがアタッチされた要素（地面）
+          const el = this.el;
           const data = this.data;
           
-          // カーソルが注視を完了したとき（fusing）のイベントリスナーを設定
-          el.addEventListener('fusing', function (evt) {
-            // evt.detail.intersection は、Raycasterがオブジェクトと交差した正確な位置情報を含む
-            const intersection = evt.detail.intersection;
+          let timer = null;
+          const cursorEl = document.querySelector('#cursor');
+          const originalColor = '#FF0077';
+          const timerRunningColor = '#FFFF00'; // 注視タイマー作動中の色 (明るい黄色)
 
-            if (!intersection || !data.cameraRig) {
-              console.error("Intersection data missing or Camera Rig not found.");
-              return;
+          // --- 移動処理関数 ---
+          const moveCamera = (intersection) => {
+            // 既に移動処理が開始されている場合は無視
+            if (data.cameraRig.getAttribute('animation')) {
+              // 一度トリガーされたアニメーション属性を削除してリセットし、再トリガーに備える
+              data.cameraRig.removeAttribute('animation');
             }
 
             const targetPosition = intersection.point;
 
-            // 1. 移動先の新しい位置を計算
-            // Y座標は、カメラリグを地面(0)に配置し、頭(1.6)で高さを調整
+            // 1. 移動先の新しい位置を計算 (カメラリグのY座標は0)
             const newPosition = {
               x: targetPosition.x,
-              y: 0, // カメラリグのY座標は0
+              y: 0, 
               z: targetPosition.z
             };
 
@@ -63,10 +66,50 @@
 
             // 3. アニメーションをトリガー
             data.cameraRig.emit('moveStart');
-            console.log(`Gaze-moved to: X=${newPosition.x.toFixed(2)}, Z=${newPosition.z.toFixed(2)}`);
+            console.log(`Gaze-moved after ${data.gazeTime}ms timer to: X=${newPosition.x.toFixed(2)}, Z=${newPosition.z.toFixed(2)}`);
+          };
+
+          // --- イベントリスナー設定 ---
+          
+          // 1. 注視開始 (mouseenter)
+          el.addEventListener('mouseenter', function (evt) {
+            // タイマーが既に動いていたら何もしない
+            if (timer) return;
+
+            // カーソルの色を変更し、タイマーが動いていることを視覚的に示す
+            if (cursorEl) {
+              cursorEl.setAttribute('material', 'color', timerRunningColor);
+            }
+
+            // 1.5秒後に移動処理を実行するように設定
+            timer = setTimeout(() => {
+              // タイマー完了: 移動処理を実行
+              moveCamera(evt.detail.intersection);
+              
+              // 移動完了後、カーソルの色を元に戻す
+              if (cursorEl) {
+                cursorEl.setAttribute('material', 'color', originalColor);
+              }
+              timer = null; // タイマーをリセット
+            }, data.gazeTime);
+          });
+
+          // 2. 注視中断/ブレ (mouseleave)
+          el.addEventListener('mouseleave', function () {
+            // タイマーが動いていたらキャンセル
+            if (timer) {
+              clearTimeout(timer);
+              timer = null;
+              
+              // カーソルの色を元に戻す
+              if (cursorEl) {
+                cursorEl.setAttribute('material', 'color', originalColor);
+              }
+              console.log('Gaze timer interrupted.');
+            }
           });
           
-          // fuser: cursor が必要とするので、clickable クラスを追加
+          // Raycasterで検出するためにclickableクラスを付与
           el.classList.add('clickable');
         }
       });
@@ -92,7 +135,7 @@
             raycaster="objects: .clickable" 
             geometry="primitive: ring; radiusOuter: 0.01; radiusInner: 0.007"
             material="color: #FF0077; shader: flat"
-            cursor="fuse: true; fuseTimeout: 3000"  <!-- 注視時間を1500ms (1.5秒) に設定 -->
+            cursor=""  <!-- ★ fuse: true を削除し、純粋なカーソルとして使用 -->
           ></a-cursor>
         </a-entity>
       </a-entity>
@@ -101,12 +144,12 @@
       <!-- シーンのオブジェクト -->
       <!-- ============================================== -->
       
-      <!-- 地面: gaze-moverを適用し、注視による移動を可能にする -->
+      <!-- 地面: gaze-timer-moverを適用し、タイマーによる移動を可能にする -->
       <a-box 
         position="0 -.5 0" width="80" height="1" depth="100" 
         color="#32CD32" 
         shadow
-        gaze-mover
+        gaze-timer-mover="gazeTime: 1500" <!-- 1.5秒の注視が必要 -->
       ></a-box>
       
       <!-- オブジェクト配置例 1 (注視移動はできない) -->
