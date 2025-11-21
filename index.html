@@ -6,46 +6,58 @@
   </head>
 
   <body>
-    <a-scene>
+    <a-scene xr-mode-ui="enabled: true">
 
-      <!-- コントローラ -->
-      <a-entity id="rightHand" oculus-touch-controls="hand: right"></a-entity>
-
-      <!-- デバッグ用 テキスト表示 -->
+      <!-- デバッグ表示 -->
       <a-entity id="debugText"
-                text="value: waiting for gamepad..."
+                text="value: waiting XR..."
                 position="0 2 -2"
-                scale="2 2 2">
-      </a-entity>
+                scale="2 2 2"></a-entity>
 
-      <!-- 背景 -->
       <a-entity environment="preset: forest"></a-entity>
 
-      <!-- デバッグスクリプト -->
       <script>
-        AFRAME.registerComponent('stick-debug', {
-          tick: function () {
-            const hand = document.querySelector('#rightHand');
-            const dtext = document.querySelector('#debugText');
-            if (!hand.components['oculus-touch-controls']) return;
+        AFRAME.registerComponent("xr-stick-debug", {
+          init() {
+            const scene = this.el.sceneEl;
+            const debug = document.getElementById("debugText");
 
-            const controller = hand.components['oculus-touch-controls'].controller;
-            if (!controller || !controller.gamepad) {
-              dtext.setAttribute('text', 'value: no gamepad detected');
-              return;
+            scene.addEventListener("enter-vr", async () => {
+              const session = await scene.renderer.xr.getSession();
+
+              debug.setAttribute("text", "value: XR session started");
+
+              this.session = session;
+
+              session.addEventListener("inputsourceschange", () => {
+                debug.setAttribute("text", "value: input source changed");
+              });
+            });
+          },
+
+          tick() {
+            const debug = document.getElementById("debugText");
+            if (!this.session) return;
+
+            let result = "";
+
+            for (const source of this.session.inputSources) {
+              if (!source.gamepad) continue;
+
+              const axes = source.gamepad.axes;
+              result += `source: ${source.handedness}\n`;
+              result += `axes: ${JSON.stringify(axes)}\n`;
             }
 
-            const gp = controller.gamepad;
+            if (!result) {
+              result = "no gamepad axes (inputSources exists)";
+            }
 
-            // 全データを表示
-            dtext.setAttribute('text', 'value: ' +
-              'axes: ' + JSON.stringify(gp.axes) + '\n' +
-              'buttons: ' + JSON.stringify(gp.buttons.map(b=>b.value))
-            );
+            debug.setAttribute("text", "value: " + result);
           }
         });
 
-        document.querySelector('a-scene').setAttribute('stick-debug', '');
+        document.querySelector("a-scene").setAttribute("xr-stick-debug", "");
       </script>
 
     </a-scene>
