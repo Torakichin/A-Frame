@@ -6,67 +6,46 @@
   </head>
 
   <body>
-    <a-scene xr-mode-ui="enabled: true">
+    <a-scene>
 
-      <!-- プレイヤー全体（移動する） -->
-      <a-entity id="rig" position="0 1.6 0">
+      <!-- コントローラ -->
+      <a-entity id="rightHand" oculus-touch-controls="hand: right"></a-entity>
 
-        <!-- カメラ -->
-        <a-entity id="camera" camera look-controls></a-entity>
-
-        <!-- 左右コントローラ（スティック情報を取得） -->
-        <a-entity id="leftHand"  oculus-touch-controls="hand: left"></a-entity>
-        <a-entity id="rightHand" oculus-touch-controls="hand: right"></a-entity>
+      <!-- デバッグ用 テキスト表示 -->
+      <a-entity id="debugText"
+                text="value: waiting for gamepad..."
+                position="0 2 -2"
+                scale="2 2 2">
       </a-entity>
 
       <!-- 背景 -->
       <a-entity environment="preset: forest"></a-entity>
 
-      <!-- 箱 -->
-      <a-box position="0 1 -4" color="red"></a-box>
-
-      <!-- 球 -->
-      <a-sphere position="0 3 -4" color="blue"></a-sphere>
-
-      <!-- スティック移動スクリプト -->
+      <!-- デバッグスクリプト -->
       <script>
-        AFRAME.registerComponent('stick-move', {
+        AFRAME.registerComponent('stick-debug', {
           tick: function () {
-            const rig = document.querySelector('#rig');
-            const right = document.querySelector('#rightHand').components['oculus-touch-controls'];
-            if (!right || !right.controller) return;
+            const hand = document.querySelector('#rightHand');
+            const dtext = document.querySelector('#debugText');
+            if (!hand.components['oculus-touch-controls']) return;
 
-            const gp = right.controller.gamepad;
-            if (!gp || !gp.axes) return;
+            const controller = hand.components['oculus-touch-controls'].controller;
+            if (!controller || !controller.gamepad) {
+              dtext.setAttribute('text', 'value: no gamepad detected');
+              return;
+            }
 
-            // スティック入力
-            const x = gp.axes[2];  // 左右
-            const y = gp.axes[3];  // 前後
+            const gp = controller.gamepad;
 
-            const speed = 0.05;
-
-            // カメラの向きに合わせて方向計算
-            const camera = document.querySelector('#camera').object3D;
-            const forward = new THREE.Vector3();
-            camera.getWorldDirection(forward);
-            forward.y = 0;
-            forward.normalize();
-
-            const rightDir = new THREE.Vector3();
-            rightDir.crossVectors(new THREE.Vector3(0, 1, 0), forward);
-
-            // 移動
-            rig.object3D.position.add(
-              forward.multiplyScalar(-y * speed)
-            );
-            rig.object3D.position.add(
-              rightDir.multiplyScalar(x * speed)
+            // 全データを表示
+            dtext.setAttribute('text', 'value: ' +
+              'axes: ' + JSON.stringify(gp.axes) + '\n' +
+              'buttons: ' + JSON.stringify(gp.buttons.map(b=>b.value))
             );
           }
         });
 
-        // コンポーネントをシーンに追加
-        document.querySelector('a-scene').setAttribute('stick-move', '');
+        document.querySelector('a-scene').setAttribute('stick-debug', '');
       </script>
 
     </a-scene>
